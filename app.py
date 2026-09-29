@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.image(ks.jpeg)
+st.image("ks.jpeg")
 # Custom CSS cho giao diện chuyên nghiệp
 st.markdown("""
 <style>
