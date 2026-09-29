@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date
+import os
 
 # -----------------------------------------------------------------------------
 # CONFIG & PAGE SETUP
@@ -11,7 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-st.image("ks.jpeg")
 # Custom CSS cho giao diện chuyên nghiệp
 st.markdown("""
 <style>
@@ -45,15 +45,78 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# INITIALIZE STATE (DATABASE MÔ PHỎNG)
+# HELPER FUNCTION FOR IMAGES
+# -----------------------------------------------------------------------------
+def display_image(image_path, fallback_url, use_container_width=True):
+    """
+    Hàm hiển thị hình ảnh an toàn: Nếu file local tồn tại thì dùng file local,
+    nếu không tìm thấy sẽ tự động fallback sang URL online để không bị lỗi FileNotFoundError.
+    """
+    if os.path.exists(image_path):
+        st.image(image_path, use_container_width=use_container_width)
+    else:
+        st.image(fallback_url, use_container_width=use_container_width)
+
+# -----------------------------------------------------------------------------
+# INITIALIZE STATE (DATABASE MÔ PHỎNG CÓ KHỞI TẠO ẢNH)
 # -----------------------------------------------------------------------------
 if 'rooms' not in st.session_state:
     st.session_state.rooms = {
-        "101": {"type": "Đơn", "price_hour": 50000, "price_day": 300000, "status": "Trống", "checkin": None, "guest": "", "phone": ""},
-        "102": {"type": "Đơn", "price_hour": 50000, "price_day": 300000, "status": "Trống", "checkin": None, "guest": "", "phone": ""},
-        "201": {"type": "Đôi", "price_hour": 80000, "price_day": 500000, "status": "Trống", "checkin": None, "guest": "", "phone": ""},
-        "202": {"type": "Đôi", "price_hour": 80000, "price_day": 500000, "status": "Trống", "checkin": None, "guest": "", "phone": ""},
-        "301": {"type": "VIP", "price_hour": 150000, "price_day": 900000, "status": "Trống", "checkin": None, "guest": "", "phone": ""},
+        "101": {
+            "type": "Đơn", 
+            "price_hour": 50000, 
+            "price_day": 300000, 
+            "status": "Trống", 
+            "checkin": None, 
+            "guest": "", 
+            "phone": "",
+            "image": "ks.jpeg",
+            "fallback_url": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500"
+        },
+        "102": {
+            "type": "Đơn", 
+            "price_hour": 50000, 
+            "price_day": 300000, 
+            "status": "Trống", 
+            "checkin": None, 
+            "guest": "", 
+            "phone": "",
+            "image": "ks.jpeg",
+            "fallback_url": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500"
+        },
+        "201": {
+            "type": "Đôi", 
+            "price_hour": 80000, 
+            "price_day": 500000, 
+            "status": "Trống", 
+            "checkin": None, 
+            "guest": "", 
+            "phone": "",
+            "image": "ks.jpeg",
+            "fallback_url": "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=500"
+        },
+        "202": {
+            "type": "Đôi", 
+            "price_hour": 80000, 
+            "price_day": 500000, 
+            "status": "Trống", 
+            "checkin": None, 
+            "guest": "", 
+            "phone": "",
+            "image": "ks.jpeg",
+            "fallback_url": "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=500"
+        },
+        "301": {
+            "type": "VIP", 
+            "price_hour": 150000, 
+            "price_day": 900000, 
+            "status": "Trống", 
+            "checkin": None, 
+            "guest": "", 
+            "phone": "",
+            "image": "ks.jpeg",
+            "fallback_url": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=500"
+        },
     }
 
 if 'history' not in st.session_state:
@@ -69,35 +132,32 @@ def calculate_bill(room_id, checkout_time, rent_type):
     
     if not checkin_time:
         return 0, 0, 0
-
     duration = checkout_time - checkin_time
     total_hours = max(1, int(duration.total_seconds() // 3600))
     total_days = max(1, duration.days if duration.days > 0 else (1 if duration.total_seconds() > 43200 else 0))
-
     if rent_type == "Theo giờ":
-        # Ví dụ: dưới 1 giờ tính 1 giờ
         total_amount = total_hours * room['price_hour']
         duration_str = f"{total_hours} giờ"
     else:
-        # Thuê ngày
         if total_days == 0:
             total_days = 1
         total_amount = total_days * room['price_day']
         duration_str = f"{total_days} ngày"
-
     return total_amount, duration_str, checkin_time
 
 # -----------------------------------------------------------------------------
 # SIDEBAR NAVIGATION & STATS
 # -----------------------------------------------------------------------------
+# Hiển thị Logo khách sạn ở Thanh bên (Sidebar)
+display_image("logo.png", "https://cdn-icons-png.flaticon.com/512/2983/2983780.png", use_container_width=False)
 st.sidebar.title("🏨 Hotel Manager")
+
 menu = st.sidebar.radio("Điều hướng", ["Sơ đồ phòng & Tác vụ", "Thống kê & Lịch sử", "Cấu hình phòng"])
 
 # Thống kê nhanh ở Sidebar
 total_rooms = len(st.session_state.rooms)
 occupied_rooms = sum(1 for r in st.session_state.rooms.values() if r['status'] == 'Có khách')
 available_rooms = sum(1 for r in st.session_state.rooms.values() if r['status'] == 'Trống')
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("📊 Trạng thái nhanh")
 st.sidebar.write(f"🔴 Đang có khách: **{occupied_rooms}/{total_rooms}**")
@@ -118,6 +178,9 @@ if menu == "Sơ đồ phòng & Tác vụ":
         status_icon = "🟢" if info['status'] == "Trống" else ("🔴" if info['status'] == "Có khách" else "🧹")
         
         with col:
+            # Hiển thị ảnh của từng phòng
+            display_image(info.get('image', 'ks.jpeg'), info.get('fallback_url', 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500'))
+            
             st.markdown(f"""
             <div class="room-card {status_class}">
                 <h3>Phòng {room_id} <small>({info['type']})</small></h3>
@@ -127,12 +190,11 @@ if menu == "Sơ đồ phòng & Tác vụ":
                 {f"<p><b>Check-in:</b> {info['checkin'].strftime('%H:%M %d/%m/%Y')}</p>" if info['status'] == 'Có khách' else ''}
             </div>
             """, unsafe_allow_html=True)
-
+            
     st.markdown("---")
     
     # Khu vực thao tác Check-in / Check-out
     col_in, col_out = st.columns(2)
-
     # BLOCK CHECK-IN
     with col_in:
         st.subheader("📥 Nhận phòng (Check-in)")
@@ -237,6 +299,7 @@ elif menu == "Cấu hình phòng":
             new_type = st.selectbox("Loại phòng", ["Đơn", "Đôi", "VIP"])
             new_price_hour = st.number_input("Giá/Giờ (VNĐ)", value=50000, step=10000)
             new_price_day = st.number_input("Giá/Ngày (VNĐ)", value=300000, step=50000)
+            new_img_file = st.text_input("Tên file ảnh (local) hoặc Đường dẫn URL", value="ks.jpeg")
             
             if st.form_submit_button("Lưu phòng"):
                 if new_id in st.session_state.rooms:
@@ -251,7 +314,9 @@ elif menu == "Cấu hình phòng":
                         "status": "Trống",
                         "checkin": None,
                         "guest": "",
-                        "phone": ""
+                        "phone": "",
+                        "image": new_img_file,
+                        "fallback_url": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500"
                     }
                     st.success(f"Đã thêm phòng {new_id}!")
                     st.rerun()
